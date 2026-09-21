@@ -20,6 +20,7 @@ export type { ProviderSetupHost, CatalogProviderCandidate, ConfiguredProvider, P
  */
 
 import { t } from '../i18n.js'
+import { cleanRenderText } from './sanitize.js'
 import { isReservedCredentialRef } from './credentialRefGuard.js'
 import {
   UserQuestionError,
@@ -451,7 +452,9 @@ function buildEditMenuOptions(provider: ConfiguredProvider): { label: string; de
     { label: t('provider-opt-edit-key'),
       ...(provider.shadowed ? { description: t('provider-row-key-shadowed') } : {}) },
     { label: t('provider-opt-edit-name'),
-      description: provider.displayName ?? provider.route },
+      description: provider.displayName !== undefined
+        ? cleanRenderText(provider.displayName, 60)
+        : provider.route },
   ]
   if (!isCatalog) {
     options.push(
@@ -586,7 +589,11 @@ async function editDisplayName(
   const { ask, notify } = deps
   const nameAnswer = await ask({
     questions: [textQuestion('display-name', t('provider-q-name'),
-      t('provider-edit-current', { value: provider.displayName ?? provider.route }))],
+      t('provider-edit-current', {
+        value: provider.displayName !== undefined
+          ? cleanRenderText(provider.displayName, 60)
+          : provider.route,
+      }))],
   })
   const value = answerText(nameAnswer, 'display-name')
   if (value === '') {
@@ -1024,7 +1031,7 @@ function buildSummaryLines(input: {
 }): string[] {
   const lines = [t('provider-line-route', { route: input.route })]
   if (input.displayName !== undefined && input.displayName !== '') {
-    lines.push(t('provider-line-name', { name: input.displayName }))
+    lines.push(t('provider-line-name', { name: cleanRenderText(input.displayName, 80) }))
   }
   lines.push(input.keyLine ?? (input.shadowed
     ? t('provider-line-keyref-env', { ref: input.ref })
